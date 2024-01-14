@@ -27,20 +27,32 @@ func (s *APIServer) handleGetUser(w http.ResponseWriter, r *http.Request) error 
 	if id, ok := mux.Vars(r)["id"]; ok {
 		// db := db.Get user id
 		fmt.Println(id)
-		return ApiJSONResponse(w, http.StatusFound, &User{})
+		return WriteJSONResponse(w, http.StatusFound, &User{})
 	}
 
-	user := NewTestUser("admin", "example@admin.pl", "Haslo#123")
 	log.Println(r)
-	return ApiJSONResponse(w, http.StatusFound, user)
+	return WriteJSONResponse(w, http.StatusFound, &User{})
 }
 
 func (s *APIServer) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
-	return ApiJSONResponse(w, http.StatusFound, "")
+	createUserRequest := new(UserCreate)
+	if err := json.NewDecoder(r.Body).Decode(createUserRequest); err != nil {
+		return err
+	}
+
+	user, err := createUserRequest.CreateAccount()
+	if err != nil {
+		return WriteJSONResponse(w, http.StatusBadRequest, err)
+	}
+	if err := s.store.CreateUser(user); err != nil {
+		return WriteJSONResponse(w, http.StatusBadRequest, "Cannot create account with this credentials")
+
+	}
+	return WriteJSONResponse(w, http.StatusFound, user)
 }
 
 func (s *APIServer) handleDeleteUser(w http.ResponseWriter, r *http.Request) error {
-	return ApiJSONResponse(w, http.StatusFound, "")
+	return WriteJSONResponse(w, http.StatusFound, "")
 }
 
 type ApiResponse struct {
@@ -50,7 +62,7 @@ type ApiResponse struct {
 	Page       int         `json:"page"`
 }
 
-func ApiJSONResponse(w http.ResponseWriter, status int, value interface{}) error {
+func WriteJSONResponse(w http.ResponseWriter, status int, value interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	response := &ApiResponse{
@@ -67,7 +79,7 @@ type APIError struct {
 func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
-			ApiJSONResponse(w, http.StatusBadRequest, APIError{Error: err.Error()})
+			WriteJSONResponse(w, http.StatusBadRequest, APIError{Error: err.Error()})
 		}
 	}
 }
