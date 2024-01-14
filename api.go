@@ -9,52 +9,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (s *APIServer) handleUser(w http.ResponseWriter, r *http.Request) error {
-	switch r.Method {
-	case "GET":
-		return s.handleGetUser(w, r)
-	case "POST":
-		return s.handleCreateUser(w, r)
-	case "DELETE":
-		return s.handleDeleteUser(w, r)
-	default:
-		return fmt.Errorf("not allowed %s methods", r.Method)
-	}
-
-}
-
-func (s *APIServer) handleGetUser(w http.ResponseWriter, r *http.Request) error {
-	if id, ok := mux.Vars(r)["id"]; ok {
-		// db := db.Get user id
-		fmt.Println(id)
-		return WriteJSONResponse(w, http.StatusFound, &User{})
-	}
-
-	log.Println(r)
-	return WriteJSONResponse(w, http.StatusFound, &User{})
-}
-
-func (s *APIServer) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
-	createUserRequest := new(UserCreate)
-	if err := json.NewDecoder(r.Body).Decode(createUserRequest); err != nil {
-		return err
-	}
-
-	user, err := createUserRequest.CreateAccount()
-	if err != nil {
-		return WriteJSONResponse(w, http.StatusBadRequest, err)
-	}
-	if err := s.store.CreateUser(user); err != nil {
-		return WriteJSONResponse(w, http.StatusBadRequest, "Cannot create account with this credentials")
-
-	}
-	return WriteJSONResponse(w, http.StatusFound, user)
-}
-
-func (s *APIServer) handleDeleteUser(w http.ResponseWriter, r *http.Request) error {
-	return WriteJSONResponse(w, http.StatusFound, "")
-}
-
 type ApiResponse struct {
 	TotalCount int         `json:"total_count"`
 	Result     interface{} `json:"result"`
@@ -99,11 +53,63 @@ func runAPIServer(listenAddr string, store Storage) *APIServer {
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
 	router.HandleFunc("/user", makeHTTPHandleFunc(s.handleUser))
-	router.HandleFunc("/user/{id}", makeHTTPHandleFunc(s.handleGetUser))
+	router.HandleFunc("/user/{id}", makeHTTPHandleFunc(s.handleGetUserById))
 
 	log.Println("JSON Api server running on port: ", s.listenAddr)
 	err := http.ListenAndServe(s.listenAddr, router)
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+func (s *APIServer) handleUser(w http.ResponseWriter, r *http.Request) error {
+	switch r.Method {
+	case "GET":
+		return s.handleGetUser(w, r)
+	case "POST":
+		return s.handleCreateUser(w, r)
+	case "DELETE":
+		return s.handleDeleteUser(w, r)
+	default:
+		return fmt.Errorf("not allowed %s methods", r.Method)
+	}
+
+}
+func (s *APIServer) handleGetUser(w http.ResponseWriter, r *http.Request) error {
+	users, err := s.store.GetUsers()
+	if err != nil {
+		log.Printf("Cannot get all users. %v", err)
+		return WriteJSONResponse(w, http.StatusNotFound, make([]string, 0))
+	}
+	return WriteJSONResponse(w, http.StatusFound, users)
+}
+func (s *APIServer) handleGetUserById(w http.ResponseWriter, r *http.Request) error {
+	if id, ok := mux.Vars(r)["id"]; ok {
+		// db := db.Get user id
+		fmt.Println(id)
+		return WriteJSONResponse(w, http.StatusFound, &User{})
+	}
+
+	log.Println(r)
+	return WriteJSONResponse(w, http.StatusFound, &User{})
+}
+
+func (s *APIServer) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
+	createUserRequest := new(UserCreate)
+	if err := json.NewDecoder(r.Body).Decode(createUserRequest); err != nil {
+		return err
+	}
+
+	user, err := createUserRequest.CreateAccount()
+	if err != nil {
+		return WriteJSONResponse(w, http.StatusBadRequest, err)
+	}
+	if err := s.store.CreateUser(user); err != nil {
+		return WriteJSONResponse(w, http.StatusBadRequest, "Cannot create account with this credentials")
+
+	}
+	return WriteJSONResponse(w, http.StatusFound, user)
+}
+
+func (s *APIServer) handleDeleteUser(w http.ResponseWriter, r *http.Request) error {
+	return WriteJSONResponse(w, http.StatusFound, "")
 }

@@ -65,19 +65,23 @@ func CreateBaseObject() *Base {
 		UpdatedAt: currentTime,
 	}
 }
+func UpdatedBaseObject() *Base {
+	currentTime := time.Now().UTC()
+	return &Base{
+		UpdatedAt: currentTime,
+	}
+}
 
-func (user *UserCreate) CreateAccount() (*User, error) {
+func (user *UserCreate) CreateAccount() (*UserCreate, error) {
 	user.HashPassword()
 	profile := user.createProfile()
-	return &User{
-		Base:     *CreateBaseObject(),
-		Username: user.Username,
-		Password: user.Password,
-		Email:    user.Email,
-		Profil:   *profile,
-		IsAdmin:  false,
-		IsActive: true,
-		Groups:   make([]Group, 0),
+	return &UserCreate{
+		Username:     user.Username,
+		Password:     user.Password,
+		Email:        user.Email,
+		FirstName:    profile.FirstName,
+		LastName:     profile.LastName,
+		ImageProfile: profile.ImageProfile,
 	}, nil
 }
 
@@ -86,7 +90,6 @@ func (user *UserCreate) createProfile() *Profil {
 		user.ImageProfile = "images/default/avatar.png"
 	}
 	return &Profil{
-		Base:         *CreateBaseObject(),
 		FirstName:    user.FirstName,
 		LastName:     user.LastName,
 		ImageProfile: user.ImageProfile,
