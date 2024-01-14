@@ -15,7 +15,9 @@ type Base struct {
 
 type User struct {
 	Base
-	UserCreate
+	Username    string       `json:"username"`
+	Email       string       `json:"email"`
+	Password    string       `json:"password"`
 	IsAdmin     bool         `json:"is_admin,omitempty"`
 	IsActive    bool         `json:"is_active,omitempty"`
 	Groups      []Group      `json:"groups,omitempty"`
@@ -36,10 +38,6 @@ type UserDTO struct {
 }
 type Profil struct {
 	Base
-	ProfilDTO
-}
-
-type ProfilDTO struct {
 	ImageProfile string `json:"image_profile,omitempty"`
 	FirstName    string `json:"first_name,omitempty"`
 	LastName     string `json:"last_name,omitempty"`
@@ -47,22 +45,14 @@ type ProfilDTO struct {
 
 type Group struct {
 	Base
-	GroupDTO
-}
-
-type GroupDTO struct {
-	Name        string       `json:"name,omitempty"`
+	GroupName   string       `json:"group_name,omitempty"`
 	Permissions []Permission `json:"permissions,omitempty"`
 }
 
 type Permission struct {
 	Base
-	PermissionDTO
-}
-
-type PermissionDTO struct {
-	Name    string `json:"name,omitempty"`
-	RawName string `json:"raw_name,omitempty"`
+	PermissionName string `json:"permission_name,omitempty"`
+	RawName        string `json:"raw_name,omitempty"`
 }
 
 func NewTestUser(username, email, password string) *User {
@@ -77,11 +67,12 @@ func NewTestUser(username, email, password string) *User {
 	}
 
 	userAdminPermission := &Permission{
-		Name:    "All",
-		RawName: "all.all_permissions",
+		PermissionName: "All",
+		RawName:        "all.all_permissions",
 	}
 	userAdminGroup := &Group{
-		Name:        "Admin",
+
+		GroupName:   "Admin",
 		Permissions: []Permission{*userAdminPermission},
 	}
 	return &User{
@@ -94,6 +85,37 @@ func NewTestUser(username, email, password string) *User {
 		Groups:   []Group{*userAdminGroup},
 	}
 
+}
+
+func CreateAccount(username, password, email, firstName, lastName string) (*User, error) {
+	user, err := createUser(username, password, email)
+	if err != nil {
+		return nil, err
+	}
+
+	profile := createProfile(firstName, lastName)
+
+	return &User{
+		Username: user.Username,
+		Password: user.Password,
+		Email:    user.Email,
+		Profil:   *profile,
+		IsAdmin:  false,
+		IsActive: true,
+		Groups:   make([]Group, 0),
+	}, nil
+}
+
+func createUser(username, password, email string) (*UserCreate, error) {
+	hashedPassword, err := HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+	return &UserCreate{Username: username, Password: hashedPassword, Email: email}, nil
+}
+
+func createProfile(firstName, lastName string) *Profil {
+	return &Profil{FirstName: firstName, LastName: lastName, ImageProfile: "images/default/avatar.jpg"}
 }
 
 func HashPassword(password string) (string, error) {

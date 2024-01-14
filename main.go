@@ -23,6 +23,6 @@ func main() {
 	log.Print(store)
 	log.Print("User Profile Auth System")
 
-	// server := runAPIServer(":3000", &store)
-	// server.Run()
+	server := runAPIServer(":3000", &store)
+	server.Run()
 }
