@@ -35,8 +35,14 @@ func CreateDBConnection() (*DataBaseStore, error) {
 }
 
 func (dbs *DataBaseStore) Init() error {
-	dbs.createProfilTable()
-	dbs.createUserTable()
+	err := dbs.createProfilTable()
+	if err != nil {
+		return err
+	}
+	err = dbs.createUserTable()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -84,7 +90,9 @@ func (dbs *DataBaseStore) CreateUser(user *UserCreate) error {
 	transaction, err := dbs.db.Begin()
 	defer func() {
 		if err != nil {
-			transaction.Rollback()
+			if rErr := transaction.Rollback(); rErr != nil {
+				log.Printf("Error rolling back transaction: %v", rErr)
+			}
 			log.Printf("Transaction rolled back: %v", err)
 		}
 	}()

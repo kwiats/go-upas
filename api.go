@@ -33,7 +33,9 @@ type APIError struct {
 func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
-			WriteJSONResponse(w, http.StatusBadRequest, APIError{Error: err.Error()})
+			if writeErr := WriteJSONResponse(w, http.StatusBadRequest, APIError{Error: err.Error()}); writeErr != nil {
+				log.Printf("Error writing JSON response: %v", writeErr)
+			}
 		}
 	}
 }
