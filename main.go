@@ -10,7 +10,7 @@ func CreateConnectionDatabase() *DataBaseStore {
 	if err != nil {
 		log.Fatalln("Connection failed.", err)
 	}
-	if err := store.Init(); err != nil{
+	if err := store.Init(); err != nil {
 		log.Printf("Failed to create tables: %v", err)
 
 	}
@@ -23,6 +23,6 @@ func main() {
 	log.Print(store)
 	log.Print("User Profile Auth System")
 
-	server := runAPIServer(":3000", &store)
-	server.Run()
+	// server := runAPIServer(":3000", &store)
+	// server.Run()
 }
