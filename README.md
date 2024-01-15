@@ -43,5 +43,5 @@ Follow these steps to get a development environment running:
 To run the automated tests:
 
  ```bash
-    make test
+make test
 ```
